@@ -167,6 +167,8 @@ ${catkin_INCLUDE_DIRS}
 catkin_install_python(PROGRAMS
   # scripts/topics.py
   scripts/execution/dispatcher.py
+  scripts/execution/Broker.py
+  scripts/execution/Planner.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
