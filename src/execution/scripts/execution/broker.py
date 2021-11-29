@@ -54,7 +54,6 @@ class Broker():
 		self.send_data_transl = rospy.Publisher(topics.SIGNAL, Float32, queue_size=4)
 
 	def callback(self, data): 
-		# how to manage the buffer size?
 		self.buffer.append(data)
 		if len(self.buffer) > self.buffer_size:
 			self.buffer = self.buffer[1:]
@@ -64,8 +63,8 @@ class Broker():
 		rate = rospy.Rate(10)
 		while not rospy.is_shutdown():
 			print(self.buffer)
-			# random_number = np.random.rand()
-			# send_data_transl.publish(random_number)
+			#random_number = np.random.rand()
+			#send_data_transl.publish(random_number)
 			rate.sleep()
 
 def main():
