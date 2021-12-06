@@ -1,14 +1,37 @@
-FROM ros:noetic
-SHELL ["/bin/bash", "-c"]
-ARG WORKSPACE=/home/ws
-ENV WORKSPACE $WORKSPACE
-RUN apt-get -y update && apt-get -y install vim
-RUN mkdir -p $WORKSPACE
-ADD src $WORKSPACE/src
-WORKDIR $WORKSPACE 
+ARG CARLA_VERSION=0.9.13
+FROM ghcr.io/unipi-smartapp-2021/carla-ros:noetic-carla${CARLA_VERSION}-amd-vulkan
+USER $USERNAME
+SHELL ["/bin/bash", "-ic"]
 
-RUN source /ros_entrypoint.sh && catkin_make
-RUN source devel/setup.sh
-RUN echo "source /ros_entrypoint.sh" >> /root/.bashrc
-RUN echo "source $WORKSPACE/devel/setup.bash" >> /root/.bashrc
-CMD ["roscore"]
+# make planning workspace
+ENV PLANNING_WS $HOME/planning_ws
+RUN mkdir -p $PLANNING_WS/src
+COPY ./planning $PLANNING_WS/src/
+
+# build planning package
+WORKDIR $PLANNING_WS
+RUN catkin_make && \
+    source $PLANNING_WS/devel/setup.bash && \
+    rosdep update && \
+    rosdep install -y planning
+RUN echo "source $PLANNING_WS/devel/setup.bash" >> ~/.bashrc
+
+COPY ./scripts/run_planner.sh $HOME/run_planner.sh
+
+RUN sudo apt-get install -y netcat
+
+# make execution workspace
+ENV EXECUTION_WS $HOME/actuators_ws
+RUN mkdir -p $EXECUTION_WS
+COPY ./src $EXECUTION_WS/src
+
+# build execution package
+WORKDIR $EXECUTION_WS
+RUN catkin_make
+RUN echo "source $EXECUTION_WS/devel/setup.bash" >> ~/.bashrc
+
+WORKDIR $HOME
+ENV CARLA_PORT 2000
+ENV ROS_MASTER_PORT 11311
+
+CMD ["/bin/bash", "-ic", "$HOME/run_planner.sh && tail -f /dev/null"]
