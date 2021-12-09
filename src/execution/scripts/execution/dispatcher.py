@@ -28,37 +28,14 @@ class Dispatcher():
                 Kp=3.0, Ki=1.5, Kd=0.0, minv=0, maxv=1)
 
         self.steering_control = PIDController(0.0,
-                Kp=2.0, Ki=1.0, Kd=0.0, minv=-1.0, maxv=1.0,
-                guard=0.01,
+                Kp=1.0, Ki=0.1, Kd=0.3, minv=-1.0, maxv=1.0,
+                guard=0.1,
                 verbose=True)
 
         self.braking_control = PIDController(0.0,
-                Kp=6.5, Ki=1.5, Kd=0.0, minv=0.0, maxv=1.0)
-
-        # Steering wheel
-        self.steer_enable_pub = rospy.Publisher(topics.STEER_ENABLE, Bool)
-        self.steer_pub = rospy.Publisher(
-                topics.STEER_DESIRED_WHEEL_ANGLE,
-                Float32
-                )
-        # self.steer_current_angle_sub = ...
-
-        # Brake
-        self.brake_homing_pub = rospy.Publisher(topics.BRAKE_HOMING, Bool)
-        self.brake_engage_pub = rospy.Publisher(topics.BRAKE_ENGAGE, Bool)
-        self.brake_des_percent_pub = rospy.Publisher(
-                topics.BRAKE_DESIRED_PERCENT,
-                Float32
-                )
-
-        # Clutch
-        self.clutch_enable_pub = rospy.Publisher(topics.CLUTCH_ENABLE, Bool)
-        self.clutch_engage_pub = rospy.Publisher(topics.CLUTCH_ENGAGE, Bool)
-
-        # PPS (Pedal Position Sensor)
-        self.pps_pub = rospy.Publisher(topics.PPS, Float32)
-
-        self.pps_sub = rospy.Subscriber(topics.PPS, Float32, lambda data: self.log_msg(data))
+                Kp=0.1, Ki=0.5, Kd=0.0, minv=0.0, maxv=1.0,
+                guard=3.0,
+                verbose=False)
 
         # CARLA vehicle control commands
         self.cmd_pub = rospy.Publisher('/carla/ego_vehicle/vehicle_control_cmd',
@@ -72,18 +49,18 @@ class Dispatcher():
         # STP stub subscription
         self.stp_sub = rospy.Subscriber('stp_data', STP_Data,
                 lambda data: self.update_command(data))
-
-        # Initialize actuators states
-        self.init_actuators()
-
-    def log_msg(self, data):
-        rospy.loginfo(data)
-
-    def init_actuators(self):
-        pass
     
     def update_command(self, data):
         self.last_cmd = data
+        # Get target velocity
+        self.target_velocity = self.current_velocity + data.dv
+
+        # This fixes the buggy behaviour of the STP at the start
+        if self.current_velocity <= 1e-2:
+            data.dt = 0.0
+
+        self.target_zorient = -data.psi + data.dt
+        # self.target_zorient = 0.0
 
     def update_status(self, data):
         # get current linear (forward) velocity
@@ -93,15 +70,6 @@ class Dispatcher():
         self.current_zorient = z
 
     def update_control(self, data):
-        # Get target velocity
-        self.target_velocity = self.current_velocity + data.dv
-
-        # This fixes the buggy behaviour of the STP at the start
-        if self.current_velocity <= 1e-2:
-            data.dt = 0.0
-
-        self.target_zorient = data.psi - data.dt
-        # self.target_zorient = 0.0
         rospy.loginfo('current dv: {:.3f}'.format(data.dv))
         rospy.loginfo('current psi: {:.3f}\t target dt: {:.3}'.format(data.psi, data.dt))
         rospy.loginfo('current z: {:.3f}\t target z: {:.3}'.format(self.current_zorient, self.target_zorient))
@@ -129,7 +97,7 @@ class Dispatcher():
         self.cmd_pub.publish(cmd)
 
     def spin(self):
-        rate = rospy.Rate(50) # 100hz
+        rate = rospy.Rate(20) # 100hz
         while not rospy.is_shutdown():
             if self.last_cmd:
                 self.update_control(self.last_cmd)
