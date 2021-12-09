@@ -13,9 +13,12 @@ from std_msgs.msg import String, Float32, Bool
 from geometry_msgs.msg import Accel
 
 class Dispatcher():
-    def __init__(self):
+    def __init__(self, buffer_size):
         # Initialize Dispatcher Node
         rospy.init_node('dispatcher', anonymous=True)
+
+        self.buffer = []
+        self.buffer_size = buffer_size
 
         self.current_velocity = 0.0
         self.target_velocity = 0.0
@@ -49,6 +52,24 @@ class Dispatcher():
         # STP stub subscription
         self.stp_sub = rospy.Subscriber('stp_data', STP_Data,
                 lambda data: self.update_command(data))
+
+        # Temp connection from broker
+        self.brok_sub = rospy.Subscriber(topics.SIGNAL, Float32, lambda rec: self.mem_buffer(rec))
+
+        # Initialize actuators states
+        self.init_actuators()
+
+    def mem_buffer(self, rec): 
+        self.buffer.append(rec)
+        if len(self.buffer) > self.buffer_size:
+            self.buffer = self.buffer[1:]
+        rospy.loginfo(self.buffer)
+            
+    def log_msg(self, data):
+        rospy.loginfo(data)
+
+    def init_actuators(self):
+        pass
     
     def update_command(self, data):
         self.last_cmd = data
@@ -99,13 +120,14 @@ class Dispatcher():
     def spin(self):
         rate = rospy.Rate(20) # 100hz
         while not rospy.is_shutdown():
+            print(self.buffer)
             if self.last_cmd:
                 self.update_control(self.last_cmd)
             rate.sleep()
 
 
 def main():
-    dispatcher = Dispatcher()
+    dispatcher = Dispatcher(3)
     dispatcher.spin()
 
 if __name__ == '__main__':

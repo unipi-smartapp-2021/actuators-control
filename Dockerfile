@@ -3,6 +3,7 @@ ARG CARLA_VERSION=0.9.13
 ARG ARCH=nvidia
 ARG GAPI=vulkan
 FROM ghcr.io/unipi-smartapp-2021/carla-ros:noetic-carla${CARLA_VERSION}-${ARCH}-${GAPI}
+
 USER $USERNAME
 SHELL ["/bin/bash", "-ic"]
 

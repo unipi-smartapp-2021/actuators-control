@@ -1,6 +1,10 @@
 """ Temporary location for topics reference """
 #!/usr/bin/env python
 
+SENSORY = 'execution/sensory'
+KINEMATICS = '/execution/kinematics'
+SIGNAL = '/execution/signal'
+
 STEER_ENABLE = '/canopen_master/steer/enable'
 STEER_DESIRED_WHEEL_ANGLE = '/canopen_master/steer/desired_wheel_angle'
 STEER_CURRENT_ANGLE = '/canopen_master/steer/current_angle'
