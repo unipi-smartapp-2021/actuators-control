@@ -38,17 +38,24 @@ class Dispatcher():
                 verbose=False)
 
         # CARLA vehicle control commands
-        self.cmd_pub = rospy.Publisher('/carla/ego_vehicle/vehicle_control_cmd',
-                carla_msgs.msg.CarlaEgoVehicleControl)
-        # CARLA vehicle information
-        self.status_sub = rospy.Subscriber('/carla/ego_vehicle/vehicle_status',
-                carla_msgs.msg.CarlaEgoVehicleStatus, lambda data: self.update_status(data))
-        # self.info_sub = rospy.Subscriber('/carla/ego_vehicle/vehicle_info',
-        #         carla_msgs.msg.CarlaEgoVehicleInfo, lambda data: self.log_msg(data))
+        self.cmd_pub = rospy.Publisher(
+                '/carla/ego_vehicle/vehicle_control_cmd',
+                carla_msgs.msg.CarlaEgoVehicleControl
+                )
 
-        # STP stub subscription
-        self.stp_sub = rospy.Subscriber('stp_data', STP_Data,
-                lambda data: self.update_command(data))
+        # CARLA vehicle information
+        self.status_sub = rospy.Subscriber(
+                '/carla/ego_vehicle/vehicle_status',
+                carla_msgs.msg.CarlaEgoVehicleStatus,
+                lambda data: self.update_status(data)
+                )
+
+        # Kinematics broker subscription
+        self.desired_kinematics_sub = rospy.Subscriber(
+                topics.DESIRED_KINEMATICS,
+                STP_Data,
+                lambda data: self.update_command(data)
+                )
     
     def update_command(self, data):
         self.last_cmd = data
