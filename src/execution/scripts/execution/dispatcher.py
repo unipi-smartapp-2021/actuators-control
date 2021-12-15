@@ -22,6 +22,7 @@ class Dispatcher():
         self.current_zorient = 0.0
         self.target_zorient = 0.0
         self.last_cmd = None
+        self.enable_actuators = False
 
         # Controllers
         self.velocity_control = PIDController(0.0,
@@ -40,22 +41,46 @@ class Dispatcher():
         # CARLA vehicle control commands
         self.cmd_pub = rospy.Publisher(
                 '/carla/ego_vehicle/vehicle_control_cmd',
-                carla_msgs.msg.CarlaEgoVehicleControl
+                carla_msgs.msg.CarlaEgoVehicleControl,
+                queue_size = 6
                 )
 
         # CARLA vehicle information
         self.status_sub = rospy.Subscriber(
                 '/carla/ego_vehicle/vehicle_status',
                 carla_msgs.msg.CarlaEgoVehicleStatus,
-                lambda data: self.update_status(data)
+                self.update_status
                 )
 
         # Kinematics broker subscription
         self.desired_kinematics_sub = rospy.Subscriber(
-                topics.DESIRED_KINEMATICS,
-                STP_Data,
-                lambda data: self.update_command(data)
+                topics.DESIRED_KINEMATICS, STP_Data,
+                self.update_command
                 )
+
+        self.actuators_enable_sub = rospy.Subscriber(
+                topics.ACTUATORS_ENABLE, Bool,
+                self.enable_callback
+                )
+
+    def enable_callback(self, data):
+        if self.enable_actuators and not data.data:
+            self.safe_stop()
+            self.last_cmd = None
+            self.target_velocity = 0.0
+            self.target_zorient = 0.0
+       
+        self.enable_actuators = data.data
+
+    def safe_stop(self):
+        """ Stop the car in a safe way """
+        # TODO
+        rospy.loginfo('Safe stopping...')
+        cmd = carla_msgs.msg.CarlaEgoVehicleControl()
+        cmd.brake = 0.1
+        cmd.throttle = 0.0
+        cmd.steer = 0.0
+        self.cmd_pub.publish(cmd)
     
     def update_command(self, data):
         self.last_cmd = data
@@ -105,8 +130,9 @@ class Dispatcher():
 
     def spin(self):
         rate = rospy.Rate(20) # 100hz
+        # TODO: only update when new command arrives or there is a new status update
         while not rospy.is_shutdown():
-            if self.last_cmd:
+            if self.last_cmd and self.enable_actuators:
                 self.update_control(self.last_cmd)
             rate.sleep()
 

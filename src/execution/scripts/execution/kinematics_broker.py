@@ -4,7 +4,7 @@ import rospy
 import numpy as np
 from execution import topics
 from planning.msg import STP_Data
-from std_msgs.msg import Float32, String, Int32
+from std_msgs.msg import Float32, String, Int32, Bool
 from execution.state import VehicleState
 
 class KinematicsBroker():
@@ -28,6 +28,10 @@ class KinematicsBroker():
                 topics.DESIRED_KINEMATICS, STP_Data,
                 queue_size=5)
 
+        self.actuators_enable_pub = rospy.Publisher(
+                topics.ACTUATORS_ENABLE, Bool,
+                queue_size=5)
+
     def kinematics_callback(self, data):
         if self.vehicle_state.is_started() and not self.vehicle_state.is_stopped():
             rospy.loginfo('[KINEMATICS BROKER] Sending kinematics data: {}'.format(data))
@@ -39,15 +43,15 @@ class KinematicsBroker():
             rospy.loginfo('[KINEMATICS BROKER] Registered starting command')
             self.vehicle_state.set_started(True)
             self.vehicle_state.set_stopped(False)
+            self.actuators_enable_pub.publish(True)
         elif data.data == 'stop':
             rospy.loginfo('[KINEMATICS BROKER] Registered stopping command')
             self.vehicle_state.set_stopped(True)
             self.vehicle_state.set_started(False)
+            self.actuators_enable_pub.publish(False)
 
     def spin(self):
-        rate = rospy.Rate(20)
-        while not rospy.is_shutdown():
-            rate.sleep()
+        rospy.spin()
 
 def main():
     broker = KinematicsBroker()

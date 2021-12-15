@@ -24,11 +24,11 @@ function spawn_mission () {
   wait_node "carla_manual_control_ego_vehicle"
   echo "VEHICLE IS READY!"
 
-  sleep 30
+  sleep 10
 
   $HOME/run_etdv_track.sh ${CARLA_RENDER_OPTS} > /dev/null &
 
-  sleep 30
+  sleep 10
   cd $PLANNING_WS/src
   rosrun planning ROS_Stp.py > /dev/null &
   sleep 1
@@ -59,6 +59,6 @@ echo "WAITING FOR RVIZ..."
 wait_node "rviz"
 echo "RVIZ IS READY!"
 
-sleep 30
+sleep 10
 
 spawn_mission
