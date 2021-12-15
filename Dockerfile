@@ -1,4 +1,3 @@
-# TODO: add ARCH and GAPI build args
 ARG CARLA_VERSION=0.9.13
 ARG ARCH=nvidia
 ARG GAPI=vulkan

@@ -5,6 +5,7 @@ ARCH=undefined
 GAPI=vulkan
 LOAD_RVIZ=1
 BUILDARGS=""
+LOAD_ASSETS=1
 CAR_X=''
 CAR_Y=''
 CAR_Z=''
@@ -90,10 +91,13 @@ else
     -e KERUBLESS_SPAWN_X=$CAR_X \
     -e KERUBLESS_SPAWN_Y=$CAR_Y \
     -e KERUBLESS_SPAWN_Z=$CAR_Z \
+    -e NVIDIA_DRIVER_CAPABILITIES=all \
     --privileged --rm -it \
     --net=host \
     --gpus all \
     --runtime=nvidia \
+    --ipc=host \
+    --ulimit core=0 \
     --env=TERM=xterm-256color \
     -u "$ROS_VERSION" \
     --name kerubless \

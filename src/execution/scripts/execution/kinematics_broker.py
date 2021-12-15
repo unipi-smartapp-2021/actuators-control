@@ -15,29 +15,32 @@ class KinematicsBroker():
 
         # Receive
         self.stp_sub = rospy.Subscriber(
-                topics.STP_DATA, Float32,
+                topics.STP_DATA, STP_Data,
                 self.kinematics_callback
                 )
         self.interaction_sub = rospy.Subscriber(
-                topics.HUMAN_INTERACTION,
-                String, self.interaction_callback
+                topics.HUMAN_INTERACTION, String,
+                self.interaction_callback
                 )
 
         # Publish
         self.desired_kinematics_pub = rospy.Publisher(
-                topics.DESIRED_KINEMATICS,
-                STP_Data,
+                topics.DESIRED_KINEMATICS, STP_Data,
                 queue_size=5)
 
     def kinematics_callback(self, data):
         if self.vehicle_state.is_started() and not self.vehicle_state.is_stopped():
+            rospy.loginfo('[KINEMATICS BROKER] Sending kinematics data: {}'.format(data))
             self.desired_kinematics_pub.publish(data)
 
     def interaction_callback(self, data):
-        if data == 'start':
+        rospy.loginfo('[KINEMATICS BROKER] Received new human_interaction command: {}'.format(data))
+        if data.data == 'start':
+            rospy.loginfo('[KINEMATICS BROKER] Registered starting command')
             self.vehicle_state.set_started(True)
             self.vehicle_state.set_stopped(False)
-        elif data == 'stop':
+        elif data.data == 'stop':
+            rospy.loginfo('[KINEMATICS BROKER] Registered stopping command')
             self.vehicle_state.set_stopped(True)
             self.vehicle_state.set_started(False)
 
