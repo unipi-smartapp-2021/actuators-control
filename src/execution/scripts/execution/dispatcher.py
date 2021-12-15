@@ -101,6 +101,9 @@ class Dispatcher():
         (x, y, z) = euler_from_quaternion([q.x, q.y, q.z, q.w])
         self.current_zorient = z
 
+        if self.last_cmd and self.enable_actuators:
+            self.update_control(self.last_cmd)
+
     def update_control(self, data):
         rospy.loginfo('current dv: {:.3f}'.format(data.dv))
         rospy.loginfo('current psi: {:.3f}\t target dt: {:.3}'.format(data.psi, data.dt))
@@ -127,15 +130,9 @@ class Dispatcher():
         rospy.loginfo('current throttle: {:.3f}'.format(cmd.throttle))
         rospy.loginfo(10*'-')
         self.cmd_pub.publish(cmd)
-
+    
     def spin(self):
-        rate = rospy.Rate(20) # 100hz
-        # TODO: only update when new command arrives or there is a new status update
-        while not rospy.is_shutdown():
-            if self.last_cmd and self.enable_actuators:
-                self.update_control(self.last_cmd)
-            rate.sleep()
-
+        rospy.spin()
 
 def main():
     dispatcher = Dispatcher()
