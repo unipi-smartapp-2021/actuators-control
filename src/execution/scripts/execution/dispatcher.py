@@ -22,6 +22,7 @@ class Dispatcher():
         self.current_zorient = 0.0
         self.target_zorient = 0.0
         self.last_cmd = None
+        self.enable_actuators = False
 
         # Controllers
         self.velocity_control = PIDController(0.0,
@@ -38,17 +39,48 @@ class Dispatcher():
                 verbose=False)
 
         # CARLA vehicle control commands
-        self.cmd_pub = rospy.Publisher('/carla/ego_vehicle/vehicle_control_cmd',
-                carla_msgs.msg.CarlaEgoVehicleControl)
-        # CARLA vehicle information
-        self.status_sub = rospy.Subscriber('/carla/ego_vehicle/vehicle_status',
-                carla_msgs.msg.CarlaEgoVehicleStatus, lambda data: self.update_status(data))
-        # self.info_sub = rospy.Subscriber('/carla/ego_vehicle/vehicle_info',
-        #         carla_msgs.msg.CarlaEgoVehicleInfo, lambda data: self.log_msg(data))
+        self.cmd_pub = rospy.Publisher(
+                '/carla/ego_vehicle/vehicle_control_cmd',
+                carla_msgs.msg.CarlaEgoVehicleControl,
+                queue_size = 6
+                )
 
-        # STP stub subscription
-        self.stp_sub = rospy.Subscriber('stp_data', STP_Data,
-                lambda data: self.update_command(data))
+        # CARLA vehicle information
+        self.status_sub = rospy.Subscriber(
+                '/carla/ego_vehicle/vehicle_status',
+                carla_msgs.msg.CarlaEgoVehicleStatus,
+                self.update_status
+                )
+
+        # Kinematics broker subscription
+        self.desired_kinematics_sub = rospy.Subscriber(
+                topics.DESIRED_KINEMATICS, STP_Data,
+                self.update_command
+                )
+
+        self.actuators_enable_sub = rospy.Subscriber(
+                topics.ACTUATORS_ENABLE, Bool,
+                self.enable_callback
+                )
+
+    def enable_callback(self, data):
+        if self.enable_actuators and not data.data:
+            self.safe_stop()
+            self.last_cmd = None
+            self.target_velocity = 0.0
+            self.target_zorient = 0.0
+       
+        self.enable_actuators = data.data
+
+    def safe_stop(self):
+        """ Stop the car in a safe way """
+        # TODO
+        rospy.loginfo('Safe stopping...')
+        cmd = carla_msgs.msg.CarlaEgoVehicleControl()
+        cmd.brake = 0.1
+        cmd.throttle = 0.0
+        cmd.steer = 0.0
+        self.cmd_pub.publish(cmd)
     
     def update_command(self, data):
         self.last_cmd = data
@@ -68,6 +100,9 @@ class Dispatcher():
         q = data.orientation
         (x, y, z) = euler_from_quaternion([q.x, q.y, q.z, q.w])
         self.current_zorient = z
+
+        if self.last_cmd and self.enable_actuators:
+            self.update_control(self.last_cmd)
 
     def update_control(self, data):
         rospy.loginfo('current dv: {:.3f}'.format(data.dv))
@@ -95,14 +130,9 @@ class Dispatcher():
         rospy.loginfo('current throttle: {:.3f}'.format(cmd.throttle))
         rospy.loginfo(10*'-')
         self.cmd_pub.publish(cmd)
-
+    
     def spin(self):
-        rate = rospy.Rate(20) # 100hz
-        while not rospy.is_shutdown():
-            if self.last_cmd:
-                self.update_control(self.last_cmd)
-            rate.sleep()
-
+        rospy.spin()
 
 def main():
     dispatcher = Dispatcher()
