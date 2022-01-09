@@ -34,6 +34,8 @@ function spawn_mission () {
   sleep 1
   rosrun planning Main_LTP.py > /dev/null &
   sleep 1
+  rosrun execution kinematics_broker.py &
+  sleep 1
   rosrun execution dispatcher.py &
   sleep 1
 }
@@ -56,5 +58,7 @@ echo "ROS MASTER IS READY!"
 echo "WAITING FOR RVIZ..."
 wait_node "rviz"
 echo "RVIZ IS READY!"
+
+sleep 10
 
 spawn_mission
