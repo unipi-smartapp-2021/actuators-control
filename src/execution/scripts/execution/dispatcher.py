@@ -10,7 +10,7 @@ from execution.geometry import quaternion_to_euler
 from tf.transformations import euler_from_quaternion
 from planning.msg import STP_Data
 from std_msgs.msg import String, Float32, Bool
-from geometry_msgs.msg import Accel
+from geometry_msgs.msg import Accel, PoseStamped
 
 class Dispatcher():
     def __init__(self):
@@ -50,6 +50,12 @@ class Dispatcher():
                 '/carla/ego_vehicle/vehicle_status',
                 carla_msgs.msg.CarlaEgoVehicleStatus,
                 self.update_status
+                )
+        # CARLA vehicle information
+        self.orientation_sub = rospy.Subscriber(
+                '/pose_stamped',
+                PoseStamped,
+                self.update_orientation
                 )
 
         # Kinematics broker subscription
@@ -92,14 +98,18 @@ class Dispatcher():
             data.dt = 0.0
 
         self.target_zorient = -data.psi + data.dt
-        # self.target_zorient = 0.0
+    
+    def update_orientation(self, data):
+        q = data.pose.orientation
+        (x, y, z) = euler_from_quaternion([q.x, q.y, q.z, q.w])
+        self.current_zorient = z
+
+        if self.last_cmd and self.enable_actuators:
+            self.update_control(self.last_cmd)
 
     def update_status(self, data):
         # get current linear (forward) velocity
         self.current_velocity = data.velocity
-        q = data.orientation
-        (x, y, z) = euler_from_quaternion([q.x, q.y, q.z, q.w])
-        self.current_zorient = z
 
         if self.last_cmd and self.enable_actuators:
             self.update_control(self.last_cmd)
