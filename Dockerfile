@@ -21,7 +21,7 @@ RUN echo "source $PLANNING_WS/devel/setup.bash" >> ~/.bashrc
 
 COPY ./scripts/run_planner.sh $HOME/run_planner.sh
 
-RUN sudo apt-get install -y netcat python3-gi-cairo
+RUN sudo apt-get install -y netcat
 
 # make execution workspace
 ENV EXECUTION_WS $HOME/actuators_ws
@@ -30,7 +30,11 @@ COPY ./src $EXECUTION_WS/src
 
 # build execution package
 WORKDIR $EXECUTION_WS
-RUN catkin_make
+RUN catkin_make && \
+    source $EXECUTION_WS/devel/setup.bash && \
+    sudo apt-get update && \
+    rosdep update && \
+    rosdep install -y execution
 RUN echo "source $EXECUTION_WS/devel/setup.bash" >> ~/.bashrc
 
 WORKDIR $HOME
