@@ -20,6 +20,9 @@ class PIDController():
         self.guard = guard
         # TODO: make this of fixed size by truncating it at each step
         self.outputs = np.array([self.get_value()])
+        self.targets = np.array([self.get_value()])
+        self.measurements =  np.array([self.get_value()])
+        self.instants = np.array([0.0])
         self.last_time = None
         
     def tick(self):
@@ -76,6 +79,9 @@ class PIDController():
         output = min(self.maxv, output)
 
         self.outputs = np.append(self.outputs, output)
+        self.targets = np.append(self.targets, target)
+        self.instants = np.append(self.instants, self.instants[-1] + dt)
+        self.measurements = np.append(self.measurements, current)
 
         return output
 
@@ -99,5 +105,17 @@ class PIDController():
         """
         self.update(output)
         return self.get_value()
+
+    def get_outputs(self):
+        return self.outputs.copy()
+
+    def get_targets(self):
+        return self.targets.copy()
+
+    def get_measurements(self):
+        return self.measurements.copy()
+
+    def get_instants(self):
+        return self.instants.copy()
 
 

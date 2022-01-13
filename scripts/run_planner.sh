@@ -62,3 +62,5 @@ echo "RVIZ IS READY!"
 sleep 10
 
 spawn_mission
+
+rostopic pub --once /human_interaction std_msgs/String start

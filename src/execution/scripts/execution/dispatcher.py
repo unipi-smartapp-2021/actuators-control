@@ -6,11 +6,11 @@ import numpy as np
 import carla_msgs.msg
 from execution import topics
 from execution.PIDController import PIDController
-from execution.geometry import quaternion_to_euler
+from execution.plotter import LivePlotter
 from tf.transformations import euler_from_quaternion
 from planning.msg import STP_Data
-from std_msgs.msg import String, Float32, Bool
-from geometry_msgs.msg import Accel, PoseStamped
+from std_msgs.msg import Bool
+from geometry_msgs.msg import PoseStamped
 
 class Dispatcher():
     def __init__(self):
@@ -24,12 +24,17 @@ class Dispatcher():
         self.last_cmd = None
         self.enable_actuators = False
 
+        # TODO: get this from a ROS parameter
+        self.plot_pids = True
+
+        self._init_plotters()
+
         # Controllers
         self.velocity_control = PIDController(0.0,
                 Kp=3.0, Ki=1.5, Kd=0.0, minv=0, maxv=1)
 
         self.steering_control = PIDController(0.0,
-                Kp=1.0, Ki=0.1, Kd=0.3, minv=-1.0, maxv=1.0,
+                Kp=1.0, Ki=0.1, Kd=0.1, minv=-1.0, maxv=1.0,
                 guard=0.1,
                 verbose=True)
 
@@ -69,6 +74,21 @@ class Dispatcher():
                 self.enable_callback
                 )
 
+    def _init_plotters(self):
+        self.steering_plotter = LivePlotter(
+                title='Steering Controller',
+                xlabel='Time (s)',
+                ylabel='Yaw (rad)',
+                xlim=(0, 1), ylim=(-0.3, 0.3),
+                blit=True)
+        self.velocity_plotter = LivePlotter(
+                title='Velocity Controller',
+                xlabel='Time (s)',
+                ylabel='Velocity (km/h)',
+                xlim=(0, 1), ylim=(0.0, 55.0),
+                blit=True)
+
+
     def enable_callback(self, data):
         if self.enable_actuators and not data.data:
             self.safe_stop()
@@ -80,7 +100,6 @@ class Dispatcher():
 
     def safe_stop(self):
         """ Stop the car in a safe way """
-        # TODO
         rospy.loginfo('Safe stopping...')
         cmd = carla_msgs.msg.CarlaEgoVehicleControl()
         cmd.brake = 0.1
@@ -140,6 +159,18 @@ class Dispatcher():
         rospy.loginfo('current throttle: {:.3f}'.format(cmd.throttle))
         rospy.loginfo(10*'-')
         self.cmd_pub.publish(cmd)
+
+        if self.plot_pids:
+            self.plot_pid(self.steering_control, self.steering_plotter)
+            self.plot_pid(self.velocity_control, self.velocity_plotter)
+    
+    def plot_pid(self, pid, plotter):
+        x = pid.get_instants()
+        y = pid.get_measurements()
+
+        plotter.set_x(x)
+        plotter.set_y(y)
+        plotter.plot(reference=pid.get_targets())
     
     def spin(self):
         rospy.spin()
