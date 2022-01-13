@@ -24,8 +24,7 @@ class Dispatcher():
         self.last_cmd = None
         self.enable_actuators = False
 
-        # TODO: get this from a ROS parameter
-        self.plot_pids = True
+        self.plot_pids = rospy.get_param('/execution/plot_pids', False)
 
         self._init_plotters()
 
