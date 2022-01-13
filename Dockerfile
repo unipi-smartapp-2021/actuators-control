@@ -21,7 +21,7 @@ RUN echo "source $PLANNING_WS/devel/setup.bash" >> ~/.bashrc
 
 COPY ./scripts/run_planner.sh $HOME/run_planner.sh
 
-RUN sudo apt-get install -y netcat
+RUN sudo apt-get install -y netcat python3-gi-cairo
 
 # make execution workspace
 ENV EXECUTION_WS $HOME/actuators_ws

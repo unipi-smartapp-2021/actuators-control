@@ -1,5 +1,5 @@
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('GTK3Agg')
 from matplotlib import pyplot as plt
 import numpy as np
 
