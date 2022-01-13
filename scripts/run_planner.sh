@@ -34,10 +34,8 @@ function spawn_mission () {
   sleep 1
   rosrun planning Main_LTP.py > /dev/null &
   sleep 1
-  rosrun execution kinematics_broker.py &
-  sleep 1
-  rosrun execution dispatcher.py &
-  sleep 1
+
+  roslaunch --screen execution execution.launch plot_pids:=true &
 }
 
 $HOME/run_carla.sh ${CARLA_RENDER_OPTS} > /dev/null &
@@ -62,3 +60,7 @@ echo "RVIZ IS READY!"
 sleep 10
 
 spawn_mission
+
+sleep 5
+
+rostopic pub --once /human_interaction std_msgs/String start

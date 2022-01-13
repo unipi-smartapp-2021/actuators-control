@@ -1,0 +1,6 @@
+<launch>
+  <arg name="plot_pids" default="false"/>
+  <param name="plot_pids" value="$(arg plot_pids)" type="bool"/>
+  <node name="dispatcher" pkg="execution" type="dispatcher.py"/>
+  <node name="kinematics_broker" pkg="execution" type="kinematics_broker.py"/>
+</launch>

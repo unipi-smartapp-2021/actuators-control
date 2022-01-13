@@ -30,7 +30,11 @@ COPY ./src $EXECUTION_WS/src
 
 # build execution package
 WORKDIR $EXECUTION_WS
-RUN catkin_make
+RUN catkin_make && \
+    source $EXECUTION_WS/devel/setup.bash && \
+    sudo apt-get update && \
+    rosdep update && \
+    rosdep install -y execution
 RUN echo "source $EXECUTION_WS/devel/setup.bash" >> ~/.bashrc
 
 WORKDIR $HOME
