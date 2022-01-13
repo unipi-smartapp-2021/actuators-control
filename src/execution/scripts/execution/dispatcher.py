@@ -24,7 +24,7 @@ class Dispatcher():
         self.last_cmd = None
         self.enable_actuators = False
 
-        self.plot_pids = rospy.get_param('/execution/plot_pids', False)
+        self.plot_pids = rospy.get_param('plot_pids', False)
 
         self._init_plotters()
 
@@ -126,9 +126,9 @@ class Dispatcher():
             self.update_control(self.last_cmd)
 
     def update_status(self, data):
+        rospy.loginfo('updating status')
         # get current linear (forward) velocity
         self.current_velocity = data.velocity
-
         if self.last_cmd and self.enable_actuators:
             self.update_control(self.last_cmd)
 
